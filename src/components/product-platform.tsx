@@ -177,7 +177,7 @@ export function ProductPlatform() {
                 className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-[400px] transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50"
               >
                 <div className="relative h-[280px]">
-                  <Image src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  <Image fill={true} src={product.image} alt={product.name} className="w-full h-full object-cover" />
                   <Badge className="absolute top-2 right-2" variant="secondary">
                     {product.store}
                   </Badge>
