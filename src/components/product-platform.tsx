@@ -18,18 +18,24 @@ import {
 } from "@/components/ui/sheet"
 import Image from 'next/image'
 
+interface Product {
+  _id: string;
+  name: string;
+  type: string;
+  store: string;
+  price: number;
+  link: string;
+  image: string;
+}
+
 export function ProductPlatform() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // fetch products from API
   useEffect(() => {
     fetch('https://shoes-marketplace-backend-d76726f71a85.herokuapp.com/products')
-      .then(res => {
-        console.log({res})
-        return res.json()})
-      .then(data => {
-        console.log({data})
-        return setProducts(data)})
+      .then(res => res.json())
+      .then((data: Product[]) => setProducts(data))
       .catch(err => console.error(err));
   }, []);
 
