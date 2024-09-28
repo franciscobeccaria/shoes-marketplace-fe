@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Menu, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import type { Product } from "@/types/global-types";
 
-import { Badge } from "@/components/ui/badge"
+import { useState, useEffect } from 'react'
+import { Menu, Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Sheet,
   SheetContent,
@@ -16,42 +18,52 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import Image from 'next/image'
-
-interface Product {
-  _id: string;
-  name: string;
-  type: string;
-  store: string;
-  price: number;
-  link: string;
-  image: string;
-}
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useDebounce } from 'use-debounce'
+import { ProductCard } from "./product-card";
 
 export function ProductPlatform() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedStores, setSelectedStores] = useState<string[]>([])
+  const [priceRange, setPriceRange] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<string>('default')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const itemsPerPage = 36
+
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
 
   // fetch products from API
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     fetch('https://shoes-marketplace-backend-d76726f71a85.herokuapp.com/products')
-      .then(res => res.json())
-      .then((data: Product[]) => setProducts(data))
-      .catch(err => console.error(err));
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        return res.json();
+      })
+      .then((data: Product[]) => {
+        setProducts(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError('An error occurred while fetching products. Please try again later.');
+        setLoading(false);
+      });
   }, []);
-
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
-  const [selectedStores, setSelectedStores] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState([0, 300000])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const itemsPerPage = 8
-
-  const handleTypeToggle = (type: string) => {
-    setSelectedTypes(prev =>
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    )
-  }
 
   const handleStoreToggle = (store: string) => {
     setSelectedStores(prev =>
@@ -59,12 +71,37 @@ export function ProductPlatform() {
     )
   }
 
-  const filteredProducts = products.filter(product => 
-    (selectedTypes.length === 0 || selectedTypes.includes(product.type)) &&
-    (selectedStores.length === 0 || selectedStores.includes(product.store)) &&
-    // product.price >= priceRange[0] && product.price <= priceRange[1] &&
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const getPriceRange = (range: string): [number, number] => {
+    switch (range) {
+      case 'under50': return [0, 50000];
+      case '50to100': return [50000, 100000];
+      case '100to200': return [100000, 200000];
+      case 'over200': return [200000, Infinity];
+      default: return [0, Infinity];
+    }
+  }
+
+  const sortProducts = (products: Product[]): Product[] => {
+    switch (sortBy) {
+      case 'priceLowToHigh':
+        return [...products].sort((a, b) => a.price - b.price);
+      case 'priceHighToLow':
+        return [...products].sort((a, b) => b.price - a.price);
+      case 'nameAZ':
+        return [...products].sort((a, b) => a.name.localeCompare(b.name));
+      case 'nameZA':
+        return [...products].sort((a, b) => b.name.localeCompare(a.name));
+      default:
+        return products;
+    }
+  }
+
+  const filteredProducts = sortProducts(products.filter(product => {
+    const [minPrice, maxPrice] = getPriceRange(priceRange);
+    return (selectedStores.length === 0 || selectedStores.includes(product.store)) &&
+      product.price >= minPrice && product.price <= maxPrice &&
+      product.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+  }))
 
   const pageCount = Math.ceil(filteredProducts.length / itemsPerPage)
   const displayedProducts = filteredProducts.slice(
@@ -74,32 +111,14 @@ export function ProductPlatform() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedTypes, selectedStores, priceRange])
+  }, [debouncedSearchTerm, selectedStores, priceRange, sortBy])
 
   const FilterSidebar = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Product Type</h3>
-        <div className="space-y-2">
-          {['shoes', 'clothes'].map(type => (
-            <div key={type} className="flex items-center">
-              <Checkbox
-                id={`type-${type}`}
-                checked={selectedTypes.includes(type)}
-                onCheckedChange={() => handleTypeToggle(type)}
-              />
-              <Label htmlFor={`type-${type}`} className="ml-2">
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
         <h3 className="text-lg font-semibold mb-2">Store</h3>
         <div className="space-y-2">
-          {['adidas', 'nike'].map(store => (
+          {['adidas', 'grid'].map(store => (
             <div key={store} className="flex items-center">
               <Checkbox
                 id={`store-${store}`}
@@ -116,20 +135,61 @@ export function ProductPlatform() {
 
       <div>
         <h3 className="text-lg font-semibold mb-2">Price Range</h3>
-        <Slider
-          min={0}
-          max={300000}
-          step={1000}
-          value={priceRange}
-          onValueChange={setPriceRange}
-          className="w-full"
-        />
-        <div className="flex justify-between mt-2">
-          <span>$ {priceRange[0].toLocaleString()}</span>
-          <span>$ {priceRange[1].toLocaleString()}</span>
-        </div>
+        <Select value={priceRange} onValueChange={setPriceRange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select price range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Prices</SelectItem>
+            <SelectItem value="under50">Under $50.000</SelectItem>
+            <SelectItem value="50to100">$50.000 - $100.000</SelectItem>
+            <SelectItem value="100to200">$100.000 - $200.000</SelectItem>
+            <SelectItem value="over200">Over $200.000</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-2">Sort By</h3>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="default">Default</SelectItem>
+            <SelectItem value="priceLowToHigh">Price: Low to High</SelectItem>
+            <SelectItem value="priceHighToLow">Price: High to Low</SelectItem>
+            <SelectItem value="nameAZ">Name: A to Z</SelectItem>
+            <SelectItem value="nameZA">Name: Z to A</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
+  )
+
+  const SkeletonCard = () => (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-[400px]">
+      <Skeleton className="h-[360px]" />
+      <div className="p-4 flex flex-col flex-grow">
+        <Skeleton className="h-6 w-24 mb-1" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    </div>
+  )
+
+  const EmptyState = () => (
+    <div className="text-center py-12">
+      <h2 className="text-2xl font-semibold mb-2">No products found</h2>
+      <p className="text-gray-600">Try adjusting your filters or search term</p>
+    </div>
+  )
+
+  const ErrorState = ({ message }: { message: string }) => (
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle>Error</AlertTitle>
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>
   )
 
   return (
@@ -159,7 +219,6 @@ export function ProductPlatform() {
               <Input
                 type="text"
                 placeholder="Search products..."
-                value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
@@ -167,30 +226,27 @@ export function ProductPlatform() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {displayedProducts.map(product => (
-              <a
-                key={product._id}
-                href={product.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-[400px] transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50"
-              >
-                <div className="relative h-[280px]">
-                  <Image fill={true} src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                  <Badge className="absolute top-2 right-2" variant="secondary">
-                    {product.store}
-                  </Badge>
+          {error ? (
+            <ErrorState message={error} />
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {loading ? (
+                Array.from({ length: itemsPerPage }).map((_, index) => (
+                  <SkeletonCard key={index} />
+                ))
+              ) : displayedProducts.length > 0 ? (
+                displayedProducts.map(product => (
+                  <ProductCard key={product._id} product={product} />
+                ))
+              ) : (
+                <div className="col-span-full">
+                  <EmptyState />
                 </div>
-                <div className="p-4 flex flex-col flex-grow">
-                  <p className="text-gray-600 text-lg font-bold mb-1">$ {product.price.toLocaleString()}</p>
-                  <h2 className="text-base font-semibold line-clamp-2 h-12">{product.name}</h2>
-                </div>
-              </a>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
 
-          {pageCount > 1 && (
+          {!loading && !error && pageCount > 1 && (
             <div className="flex justify-center items-center mt-8 space-x-2">
               <Button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
