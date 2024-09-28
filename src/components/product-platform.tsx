@@ -3,14 +3,12 @@
 import type { Product } from "@/types/global-types";
 
 import { useState, useEffect } from 'react'
-import { Menu, Search, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Menu, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Sheet,
   SheetContent,
@@ -28,11 +26,7 @@ import {
 import { useDebounce } from 'use-debounce'
 import { ProductCard } from "./product-card";
 
-export function ProductPlatform() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+export function ProductPlatform({products}: {products: Product[]}) {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStores, setSelectedStores] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState<string>('all')
@@ -42,28 +36,6 @@ export function ProductPlatform() {
   const itemsPerPage = 36
 
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
-
-  // fetch products from API
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch('https://shoes-marketplace-backend-d76726f71a85.herokuapp.com/products')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('Failed to fetch products');
-        }
-        return res.json();
-      })
-      .then((data: Product[]) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setError('An error occurred while fetching products. Please try again later.');
-        setLoading(false);
-      });
-  }, []);
 
   const handleStoreToggle = (store: string) => {
     setSelectedStores(prev =>
@@ -167,29 +139,11 @@ export function ProductPlatform() {
     </div>
   )
 
-  const SkeletonCard = () => (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-[400px]">
-      <Skeleton className="h-[360px]" />
-      <div className="p-4 flex flex-col flex-grow">
-        <Skeleton className="h-6 w-24 mb-1" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    </div>
-  )
-
   const EmptyState = () => (
     <div className="text-center py-12">
       <h2 className="text-2xl font-semibold mb-2">No products found</h2>
       <p className="text-gray-600">Try adjusting your filters or search term</p>
     </div>
-  )
-
-  const ErrorState = ({ message }: { message: string }) => (
-    <Alert variant="destructive">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
-      <AlertDescription>{message}</AlertDescription>
-    </Alert>
   )
 
   return (
@@ -226,27 +180,19 @@ export function ProductPlatform() {
             </div>
           </div>
 
-          {error ? (
-            <ErrorState message={error} />
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {loading ? (
-                Array.from({ length: itemsPerPage }).map((_, index) => (
-                  <SkeletonCard key={index} />
-                ))
-              ) : displayedProducts.length > 0 ? (
-                displayedProducts.map(product => (
-                  <ProductCard key={product._id} product={product} />
-                ))
-              ) : (
-                <div className="col-span-full">
-                  <EmptyState />
-                </div>
-              )}
-            </div>
-          )}
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {displayedProducts.length > 0 ? (
+              displayedProducts.map(product => (
+                <ProductCard key={product._id} product={product} />
+              ))
+            ) : (
+              <div className="col-span-full">
+                <EmptyState />
+              </div>
+            )}
+          </div>
 
-          {!loading && !error && pageCount > 1 && (
+          {pageCount > 1 && (
             <div className="flex justify-center items-center mt-8 space-x-2">
               <Button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
