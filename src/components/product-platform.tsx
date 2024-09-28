@@ -149,7 +149,7 @@ export function ProductPlatform({products}: {products: Product[]}) {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Product Platform</h1>
+        <h1 className="text-4xl font-bold">Zapparia</h1>
         <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="lg:hidden">
