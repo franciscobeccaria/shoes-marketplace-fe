@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useLayoutEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Menu, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Badge } from "@/components/ui/badge"
@@ -16,51 +16,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-
-// Sample product data (expanded)
-const productsMock = [
-  {
-    name: "Zapatillas Gazelle Indoor",
-    price: 189999,
-    image: "https://assets.adidas.com/images/w_383,h_383,f_auto,q_auto,fl_lossy,c_fill,g_auto/8a45e94081cc4a529154882c980d750d_9366/zapatillas-gazelle-indoor.jpg",
-    link: "https://www.adidas.com.ar/zapatillas-gazelle-indoor/IE6605.html",
-    store: "adidas",
-    _id: "66f6a7055869f9a0e123ebfb",
-    type: "shoes",
-    color: "blue"
-  },
-  {
-    name: "Classic T-Shirt",
-    price: 59999,
-    image: "/placeholder.svg?height=383&width=383",
-    link: "#",
-    store: "nike",
-    _id: "66f6a7055869f9a0e123ebfc",
-    type: "clothes",
-    color: "white"
-  },
-  {
-    name: "Running Shoes",
-    price: 249999,
-    image: "/placeholder.svg?height=383&width=383",
-    link: "#",
-    store: "nike",
-    _id: "66f6a7055869f9a0e123ebfd",
-    type: "shoes",
-    color: "red"
-  },
-  {
-    name: "Casual Jacket",
-    price: 299999,
-    image: "/placeholder.svg?height=383&width=383",
-    link: "#",
-    store: "adidas",
-    _id: "66f6a7055869f9a0e123ebfe",
-    type: "clothes",
-    color: "black"
-  },
-  // Add more sample products here...
-]
+import Image from 'next/image'
 
 export function ProductPlatform() {
   const [products, setProducts] = useState([]);
@@ -215,7 +171,7 @@ export function ProductPlatform() {
                 className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col h-[400px] transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50"
               >
                 <div className="relative h-[280px]">
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                  <Image src={product.image} alt={product.name} className="w-full h-full object-cover" />
                   <Badge className="absolute top-2 right-2" variant="secondary">
                     {product.store}
                   </Badge>
