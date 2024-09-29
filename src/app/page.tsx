@@ -1,6 +1,6 @@
 import { ProductPlatform } from "@/components/product-platform";
 
-export const revalidate = 60; // 86400 seconds is 1 day
+export const revalidate = 86400; // 86400 seconds is 1 day
 
 export default async function Home() {
   await fetch('https://shoes-marketplace-backend-d76726f71a85.herokuapp.com/products/scrape/adidas')
